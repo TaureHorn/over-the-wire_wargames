@@ -287,3 +287,71 @@ TMP=$(mktemp -d);cd $TMP
 git clone ssh://bandit27-git@localhost:2220/home/bandit27-git/repo
 cat repo/README
 ```
+### Level 28 -> Level 29
+Clone a repository and find a password
+```
+TMP=$(mktemp -d);cd $TMP
+git clone ssh://bandit28-git@localhost:2220/home/bandit28-git/repo
+cd repo
+cat README.md
+```
+This time the password in the README.md file it blanked out. However using `git log` to see the repo's commit history suggets that before the password was only censored in the last commit. We can checkout earlier repo states to find the right data
+```
+git checkout 3621de89d8eac9d3b64302bfb2dc67e9a566decd
+cat README.md
+```
+### Level 29 -> Level 30
+Clone a repository and find a password
+```
+TMP=$(mktemp -d);cd $TMP
+git clone ssh://bandit29-git@localhost:2220/home/bandit29-git/repo
+cd repo
+cat README.md
+```
+README.md has a note in the password field - "no passwords in production!". Lets see if they have non prod branches.
+```
+git branch -a
+git checkout origin/dev
+cat README.md
+```
+### Level 30 -> Level 31
+Clone a repository and find a password
+```
+TMP=$(mktemp -d);cd $TMP
+git clone ssh://bandit30-git@localhost:2220/home/bandit30-git/repo
+cd repo
+cat README.md
+```
+README.md doesn't contain any relevant information. However, looking trawling through the `.git` directory shows the tag `secret` mentioned in `.git/packed-refs`. 
+```
+git tag
+git show secret
+```
+### Level 31 -> Level 32
+Clone a repository and find a password
+```
+TMP=$(mktemp -d);cd $TMP
+git clone ssh://bandit31-git@localhost:2220/home/bandit31-git/repo
+cd repo
+cat README.md
+```
+README.md gives you a task to push some data to the remote repo
+```
+echo "May I come in?" > key.txt
+git add -f key.txt
+git commit -m "<message"
+git push origin master
+```
+### Level 32 -> Level 33
+ESCAPE!
+
+Logging in to bandit32 all commands appear to be being converted to uppercase and therefore are not useable. However, with uppercase only we can still use environment variables, numbers and symbols. Fortunately, in this context at least, env varbiable 0 is a reference to /bin/bash and will spawn a simple bash shell when called
+```
+$0
+```
+Spawning this shell seems to have also logged the session into the bandit33 user `$ whoami` --> bandit33. Therefore it's simple to get the password for the full bandit33 session
+```
+cat /etc/bandit_pass/bandit33
+```
+Interestingly, in most other examples it has been fine to use the `$USER` env variable in the above path. However, not in this case as it seems that variable is set when logging into bandit32 and is not set when spawning a simple bash shell with $0
+
