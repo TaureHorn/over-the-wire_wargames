@@ -138,13 +138,13 @@ ssh -p 2220 -i sshkey.private bandit14@localhost
 Get password to next level by submitting current level password to port 30000
 ```
 telnet localhost 30000
-$: $current_level_password
+$: <current_level_password>
 ```
 ### Level 15 -> Level 16
 Get password to next level by submitting current level password to port 30001 using ssl/tls encryption
 ```
 ncat --ssl localhost 30001
-$: $current_level_password
+$: <current_level_password>
 ```
 ### Level 16 -> Level 17    
 Get password to next level by submitting current level password to port a port between 31000 and 32000. You must determine the correct port with ssl/tls.
@@ -155,9 +155,9 @@ or
 ```
 nmap -p 31000-32000 localhost
 ```
-these commands return a list of ports. Connect to each port with `ncat --ssl localhost $port` and submit the current level password. One of them will return a correct answer. When the right one is found, the command may be re-run to write the return data to a file.
+these commands return a list of ports. Connect to each port with `ncat --ssl localhost <port>` and submit the current level password. One of them will return a correct answer. When the right one is found, the command may be re-run to write the return data to a file.
 ```
-ncat --ssl localhost $correct_port > sshkey
+ncat --ssl localhost <correct_port> > sshkey
 
 ```
 NOTE: this returns a private ssh key. In order for this to be functional, it must have its file permissinons altered. A simple `chmod 400 sshkey` will allow it to be used.
@@ -178,8 +178,112 @@ Use the binary in the home dir to execute a command as a different user to acqui
 ```
 ./bandit20-do $(id bandit20) cat /etc/bandit_pass/bandit20
 ```
+### Level 20 -> Level 21
+Use the setuid binary to connect to a port that sends out the current password. If the binary receives the correct password it will respond with the password for the next level.
 
+First we need a port number of our choosing.
+```
+PORT_NO=<chosen_port_no>
+nc -l -p $PORT_NO < /etc/bandit_pass/$USER &
+~/suconnect $PORT_NO
+```
+### Level 21 -> Level 22
+Take a look in /etc/cron.d
+```
+cat /etc/cron.d/cronjob_bandit22
+cat /usr/bin/cronjob_bandit22.sh    
+cat /tmp/t7O6lds9S0RqQh9aMcz6ShpAoZKF7fgv
+```
+### Level 22 -> Level 23
+Take a look in /etc/cron.d
+```
+cat /etc/cron.d/cronjob_bandit23
+cat /usr/bin/cronjob_bandit23.sh    
+TMP=$(mktemp -d);cd $TMP
+cp /usr/bin/cronjob_bandit23 .
+vim cronjob_bandit23.sh
+```
+cronjob_bandit23.sh uses the current username in an md5 hashing function to generate a filename and then writes the current level password to /tmp/<hashed filename>. We just need to change the script so we can get the filename where the cronjob has put the password for the nex level
+```
+1 #!/bin/bash
+2   
+3 myname="bandit23"
+4 mytarget="$(echo I am use $myname | md5sum | cut -d ' ' -f 1)
+5 echo "$mytarget"
+```
+with the script changed to suit our needs we just need to run it to get the right filename and then cat the result
+```
+NEXT_PASS=$(bash ./cronjob_bandit23.sh)
+cat /tmp/$NEXT_PASS
+```
+### Level 23 -> Level 24
+Take a look in /etc/cron.d
+```
+cat /etc/cron.d/cronjob_bandit24
+cat /usr/bin/cronjob_bandit24.sh
+```
+Catting the bandit24 cron job and its script shows that cron will run a job every minute as user bandit24 and will execute then delete any script placed in /var/spool/bandit24/foo. Current user bandit23 can write to this directory therefore we can use it for privelege escalation by writing our own script to broadcast the bandit24 password on a local port
+```
+TMP=$(mktemp -d);cd $TMP
+touch next_pass.sh
+chmod +x next_pass.sh
+vim next_pass.sh
+```
+then edit the script to look somethiing like the following;
+```
+1 #! /bin/bash
+2 nc -l -p <port_number> < /etc/bandit_pass/$(whoami) &
+```
+once the script is written you can copy it to the right directory where the cronjob_bandit24.sh executes, wait a minute for the cron job to run and then listen to the port to get the password for user bandit24
+```
+cp next_pass.sh /var/spool/bandit24/foo
+sleep 60;nc localhost <port_number>
+```
+### Level 24 -> Level 25
+Daemon on port 30002 has the password for the next level, but only if you submit the current password and a secret four digit code. You'll have to brute force it.
+```
+TMP=$(mktemp -d);cd $TMP
+touch pw_brute-force.sh
+chmod +x pw_brute-force.sh
+vim pw_brute-force.sh
+```
+edit the script to look something like this then run it
+```
+1 #! /bin/bash
+2 
+3 if [ ! -f ./brute-force ]; then
+4   touch ./brute-force
+5   for i in {0000..9999}; do    
+6       echo "<current_level_password> $i" >> ./brute-force
+7   done
+8 fi
+9
+10 cat ./brute-force | nc locahost 30002
+```
+### Level 25 -> Level 26
+Log in to level 26. The shell for it is not /bin/bash. Figure it out
 
+This one's kinda dumb. /home/bandit25/ has a ssh private key for bandit26. This time ssh via localhost is not allowed so you'll have to key the key locally
+```
+ssh -p 2220 bandit25@bandit.labs.overthewire.org -t 'cat ~/bandit26.sshkey' > bandit26.key
+```
+Having this key, its easy then to ssh into bandit26
+```
+ssh -p 2220 -i bandit26.key bandit26@bandit.labs.overthewire.org
+```
+Problem is, the shell exits after outputting a small bit of text on a successful connection. I won't write out the solution here, I had to google it and I don't want to pass it off that I figured it out. It involves making your terminal window only a few lines in height when you ssh into bandit26 and from there you can get a shell through vi. As someone who's termninal is ALWAYS fullscreen this one sucked.
+### Level 26 -> Level 27
+Now that you have a shell get the pass for level 27
 
-
-
+Following on from the last level, you should still have a shell - at least an instance of vi. If you don't know vim this might be a pain, but otherwise it's a breeze.
+```
+:! ls
+:! bandit27-do cat /etc/bandit_pass/bandit27
+```
+### Level 27 -> Level 28
+Clone a repository and find a password
+```
+TMP=$(mktemp -d);cd $TMP
+git clone ssh://bandit27-git@localhost:2220/home/bandit27-git/repo
+cat repo/README
+```
